@@ -20,7 +20,7 @@ In order to modify somethings in the Lexer you will need to download Jflex and e
  jflex python.jflex
   ```
   
-To modify the Parser and compile everythings you will need to execute:
+To modify the Parser and compile everything you will need to execute:
 
 
 
