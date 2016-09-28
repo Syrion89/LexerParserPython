@@ -1,0 +1,681 @@
+import java.io.*;
+import java_cup.runtime.*;
+import java.util.*;
+import javax.swing.JFrame;
+
+ action code {:
+    int curr_line() {
+	return ((Lexer)parser.getScanner()).curr_line();
+    }
+   :}
+
+parser code {:
+    public void syntax_error(Symbol cur_token){
+	System.err.println("Syntax error at "+cur_token);
+    }
+   
+
+    public static void main(String args[]) {
+	try {
+	    Lexer lexer = new Lexer(new FileReader(args[0]));
+	    // start parsing
+	    Parser p = new Parser(lexer);
+	    System.out.println("Start:\n");
+            p.parse();
+	    System.out.println("\nFinish");
+
+	    python_Tree.tree.printTree();
+            GraphicTree frame = new GraphicTree();
+            Node root = python_Tree.tree.getRoot();
+            int width = 2000;
+            frame.generateTree(root,null,0,0,width);
+            frame.printGraphicTree();
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(width, 720);
+            frame.setVisible(true);
+	} catch (Exception e) {
+	    e.printStackTrace();
+	} 
+    }
+:};
+
+terminal ERROR, NONE, TRUE, AND, AS, ASSERT, BREAK, CLASS, CONTINUE, DEF, DEL, ELIF, ELSE, EXCEPT, FINALLY, FOR, FROM, GLOBAL, IF, IMPORT, IN, IS, LAMBDA, NONLOCAL, NOT, OR, PASS, RAISE, RETURN, TRY, WHILE, WITH, YIELD, IDENT, EQ, COLON, EXJOIN,  PLUS, MINUS, MULT, POW, DIV, F_DIV, MOD, AT, BLS, BRS, B_AND, B_OR, B_XOR, B_O_COMP, LT, GT, LET, GET, EQEQ, NEQ,NEQQ, COMMA, LPAR, RPAR, LSB, RSB, LBRACE, RBRACE, EXLINE, DOT, SEMI, ARROW, PLUS_EQ, MINUS_EQ, MULT_EQ, DIV_EQ, F_DIV_EQ, MOD_EQ, B_AND_EQ, B_OR_EQ, B_XOR_EQ, BRS_EQ, BLS_EQ, POW_EQ, FALSE, INDENT, DEDENT, NEWLINE, PRINT,EXEC,NOT_IN,IS_NOT;
+terminal LONG_INT, FLOAT, IMAG_NUMB, STRING; 
+terminal INT;
+
+non terminal program;
+non terminal Node stmt_list;
+non terminal Node import_stmt;
+non terminal Node class_stmt;
+non terminal Node param_list;
+non terminal Node control_stmt;
+non terminal Node suite;
+non terminal Node elif_stmt;
+non terminal Node elements;
+non terminal Node test_in;
+non terminal Node stmt;
+non terminal Node function_declaration;
+non terminal Node else_stmt;
+non terminal As as_op;
+non terminal Node import_stmt_as;
+non terminal Node import_stmt_as_list;
+non terminal assign_operator;
+non terminal Node assign_stmt;
+non terminal Node print_ret_stmt;
+non terminal Node arith_expr;
+non terminal Node break_continue_stmt;
+non terminal Node try_stmt;
+non terminal Node finally_stmt;
+non terminal Node function_call;
+non terminal Node param_list_call;
+non terminal Node global_stmt;
+non terminal Node global_stmt_sup;
+non terminal Node expression;
+non terminal Node item_call;
+non terminal Node elements_two;
+
+precedence left LAMBDA;
+precedence left IF;
+precedence left OR;
+precedence left AND;
+precedence left NOT;
+precedence left IN,NOT_IN,IS,IS_NOT,LT,LET,GT,GET,NEQ,NEQQ,EQEQ;
+precedence left B_OR;
+precedence left B_XOR;
+precedence left B_AND;
+precedence left BLS,BRS;
+precedence left MINUS, PLUS;
+precedence left MULT, DIV,F_DIV,MOD;
+precedence right POW;
+precedence left DOT;
+
+
+start with program;
+
+
+program	
+	::= stmt_list:sl
+	{: 	
+			ArrayList<Node<String>> OldList = (ArrayList) sl.getChilds();
+		for(int i =0;i<OldList.size();i++){
+			python_Tree.tree.getRoot().addChild(OldList.get(i));
+			}
+
+		:}
+    ;
+
+
+
+stmt_list
+	::= stmt:s stmt_list:sl
+	{:
+	  Node<String> List = new Node<String>("Stmt_list");
+	  if(s != null)
+	  List.addChild(s);
+
+	  if(sl != null)
+		{
+		ArrayList<Node<String>> OldList = (ArrayList) sl.getChilds();
+		for(int i =0;i<OldList.size();i++){
+
+			List.addChild(OldList.get(i));
+			}
+		}
+	  RESULT = List;
+	:}
+	|stmt:s
+	{:
+		if(s != null){
+		Node<String> tmp = new Node<String>("Stmt_list");
+		tmp.addChild(s);
+		RESULT = tmp;
+		}
+		:}
+	;
+
+stmt
+	::=	control_stmt:e
+	{: RESULT = e; :}
+	|	function_declaration:fd
+	{: 
+		RESULT = fd; 
+	:}
+	|	class_stmt:cs
+	{:
+		RESULT =cs;
+	:}
+	|	import_stmt:is
+	{: 
+
+		RESULT = is;:}
+	| assign_stmt:as
+	{:RESULT = as;:}
+	| print_ret_stmt:prs
+	{: RESULT = prs;:}
+	| 	NEWLINE
+	{::}
+	| break_continue_stmt:bcs
+	{:
+		RESULT= bcs;
+	:}
+	| try_stmt:ts
+	{:
+		RESULT = ts;
+	:}
+	| global_stmt:gs
+	{:
+		RESULT = gs;
+	:}
+	| expression:e
+	{:RESULT =e;:}
+	| error NEWLINE
+	;
+
+global_stmt
+	::= GLOBAL IDENT:id global_stmt_sup:gsp
+		{:
+			Node<String> List = new Node<String>("GLOBAL");
+			List.addChild(new Identifier(id,curr_line()));
+			if(gsp!= null)
+			{
+			ArrayList<Node<String>> OldList = (ArrayList) gsp.getChilds();
+			for(int i =0;i<OldList.size();i++){
+				List.addChild(OldList.get(i));
+			}
+			}
+		RESULT = List;
+		:}
+		;
+
+global_stmt_sup
+	::= COMMA IDENT:id global_stmt_sup:gsp
+	{:
+		Node<String> List = new Node<String>("");
+		List.addChild(new Identifier(id,curr_line()));
+		if(gsp != null){
+
+			ArrayList<Node<String>> OldList = (ArrayList) gsp.getChilds();
+			for(int i =0;i<OldList.size();i++){
+				List.addChild(OldList.get(i));
+			}
+		}
+		RESULT = List;
+
+	:}
+	| COMMA IDENT:id
+	{:
+		RESULT = new Identifier(id,curr_line());
+	:}
+	|
+	;
+
+try_stmt
+	::= TRY COLON suite:s finally_stmt:cs
+	{:
+		Node tmp = new TryFinally("Try",s,curr_line());
+		if(cs != null)
+		{
+			tmp.addChild(cs);
+		}
+		RESULT = tmp;
+	:}
+	;
+
+
+finally_stmt
+	::=	FINALLY COLON suite:s
+	{:
+		RESULT = new TryFinally("Finally",s,curr_line());
+	:}
+	|
+	;
+
+
+break_continue_stmt
+	::=	BREAK
+	{:
+		RESULT = new Node<String>("Break");
+	:}
+	|	CONTINUE
+	{:
+		RESULT = new Node<String>("Continue");
+	:}
+	;
+
+import_stmt
+	::=	IMPORT import_stmt_as:isa
+	{:
+		
+		RESULT = isa;
+	:}
+	;
+
+import_stmt_as
+	::=	IDENT:id as_op:ao import_stmt_as_list:isal
+	{:
+		Import List = new Import("Import",curr_line());
+		if(ao != null){
+			ao.addChildren(new Identifier(id,curr_line()));
+			List.addChild(ao);
+		}
+		else{
+
+			List.addChildren(new Identifier(id,curr_line()));
+		}
+		if(isal != null)
+		{
+			ArrayList<Node<String>> OldList = (ArrayList) isal.getChilds();
+			for(int i =0;i<OldList.size();i++){
+				List.addChildren(OldList.get(i));
+			}
+		}
+
+
+		RESULT = List;
+		
+	:}
+	;
+import_stmt_as_list
+	::=	COMMA IDENT:id as_op:ao import_stmt_as_list:isal
+	{: 
+		Node<String> List = new Node<String>("");
+		if(ao != null){
+			ao.addChildren(new Identifier(id,curr_line()));
+			List.addChild(ao);
+		}
+		else{
+
+			List.addChild(new Identifier(id,curr_line()));
+		}
+
+		if(isal != null){
+			ArrayList<Node<String>> OldList = (ArrayList) isal.getChilds();
+			for(int i =0;i<OldList.size();i++){
+
+			List.addChild(OldList.get(i));
+			}
+		}	
+
+		RESULT = List;
+	:}
+	|
+	;
+
+as_op
+	::= AS IDENT:id
+	{:
+		RESULT = new As(new Identifier(id,curr_line()),curr_line()); 
+	:}
+	|
+	;
+
+class_stmt
+	::=	CLASS IDENT:id COLON suite:s
+	{:
+		Node<String> name = new Node<String>("Name");
+		name.addChild(new Identifier(id,curr_line()));
+		RESULT = new Classe(name,s,curr_line());
+	:}
+	;
+
+function_declaration 
+	::=	DEF IDENT:id LPAR param_list:pl RPAR COLON suite:s
+	{:
+		Node<String> name = new Node<String>("Name");
+		name.addChild(new Identifier(id,curr_line()));
+
+		if(pl != null)
+		RESULT = new Function(name,pl,s,curr_line());
+		else
+		RESULT = new Function(name,s,curr_line());
+	:}
+	;
+
+param_list
+	::=	IDENT:id COMMA param_list:p
+	{: 
+		Node<String> List = new Node<String>("Parameter List");
+		List.addChild(new Identifier(id,curr_line()));
+		if(p != null)
+		{
+		ArrayList<Node<String>> OldList = (ArrayList) p.getChilds();
+		for(int i =0;i<OldList.size();i++){
+
+			List.addChild(OldList.get(i));
+			}
+		}
+		RESULT = List;
+
+	:}
+	| IDENT:id
+	{: 
+		Identifier identif= new Identifier(id,curr_line());
+		Node<String> tmp = new Node<String>("Parameter List");
+		tmp.addChild(identif);
+		RESULT = tmp;
+	:}
+	|
+	;
+
+
+
+test_in
+	::=	elements:e1 IN elements:e2
+	{:
+		RESULT = new BoolOp("In",e1,e2,curr_line());
+	:}
+	;
+
+
+
+
+assign_stmt
+	::=	item_call:e1  assign_operator:ao expression:e2
+	{: RESULT = new Assignment(ao,e1,e2,curr_line());
+	:}
+	;
+
+assign_operator
+	::=	EQ
+	{: RESULT = "=";:}
+	|	PLUS_EQ
+	{: RESULT = "+=";:}
+	|	MINUS_EQ
+	{: RESULT = "-=";:}
+	| 	MULT_EQ
+	{: RESULT = "*=";:}
+	|	DIV_EQ
+	{: RESULT = "/=";:}
+	|	F_DIV_EQ
+	{: RESULT = "//=";:}
+	|	MOD_EQ
+	{: RESULT = "%=";:}
+	|	B_AND_EQ
+	{: RESULT = "&=";:}
+	|	B_OR_EQ
+	{: RESULT = "|=";:}
+	|	B_XOR_EQ
+	{: RESULT = "^=";:}
+	|	BRS_EQ
+	{: RESULT = ">>=";:}
+	|	BLS_EQ
+	{: RESULT = "<<=";:}
+	|	POW_EQ
+	{: RESULT = "**=";:}
+	;
+
+
+
+control_stmt
+	::= IF expression:t COLON suite:s elif_stmt:es else_stmt:els
+	{:
+		Control tmp = new Control("If",t,s,curr_line());
+		if(es != null){
+		ArrayList<Node<String>> OldList = (ArrayList) es.getChilds();
+		for(int i =0;i<OldList.size();i++){
+
+			tmp.addChild(OldList.get(i));
+			}
+			}
+		if(els != null)
+		tmp.addChild(els);
+		RESULT = tmp;
+	:}
+	|	WHILE expression:t COLON suite:s else_stmt:els
+	{:
+		Control tmp = new Control("While",t,s,curr_line());
+		if(els != null)
+		tmp.addChild(els);
+		RESULT = tmp;
+	:}
+	|	FOR test_in:t COLON suite:s else_stmt:els
+	{:
+		Control tmp = new Control("For",t,s,curr_line());
+		if(els != null)
+		tmp.addChild(els);
+		RESULT = tmp;
+	:}
+	;	
+
+
+
+print_ret_stmt
+	::= PRINT expression:e
+	{:
+		Node<String> tmp = new Node<String>("Print");
+		tmp.addChild(e);
+		RESULT = tmp;
+	:}
+	|	RETURN expression:e
+	{:
+		Node<String> tmp = new Node<String>("Return");
+		tmp.addChild(e);
+		RESULT = tmp;
+	:}
+	;
+
+
+
+elements
+	::=	INT:i
+	{: RESULT = new Numeric(i,curr_line());
+	:}
+	|	LONG_INT:l
+	{: RESULT = new Numeric(l,curr_line());
+	:}
+	|	FLOAT:f
+	{: RESULT = new Numeric(f,curr_line());
+	:}
+	|	IMAG_NUMB:i
+	{: RESULT = new Numeric(i,curr_line());
+	:}
+	|	STRING:s
+	{: RESULT = new Stringa(s,curr_line()); 
+	:}
+	|	FALSE
+	{:
+		RESULT = new  Boolean("False",curr_line()); 
+	:}
+	|	TRUE
+	{:
+		RESULT = new  Boolean("True",curr_line()); 
+	:}
+	| item_call:ic
+	{:RESULT=ic;:}
+	;
+
+elements_two
+	::=	 IDENT:id
+	{:	 RESULT = new  Identifier(id,curr_line()); :}
+	|	IDENT:i LSB expression:e RSB
+	{:
+		Node<String> name = new Node<String>("Name");
+		Node<String> param = new Node<String>("Parameter");
+		name.addChild(new Identifier(i,curr_line()));
+		param.addChild(e);
+		RESULT = new ArrayEle(name,param,curr_line());
+	:}
+	|	function_call:fc
+	{:
+		RESULT = fc;
+	:}
+	;
+
+
+elif_stmt
+	::=	 ELIF expression:e COLON suite:s elif_stmt:es
+	{:
+		Node<String> List = new Node<String>("");
+		List.addChild(new Control("Elif",e,s,curr_line()));
+		if(es != null)
+		{
+			ArrayList<Node<String>> OldList = (ArrayList) es.getChilds();
+			for(int i =0;i<OldList.size();i++){
+
+			List.addChild(OldList.get(i));
+			}
+		}
+		RESULT = List;
+	:}
+	|
+	;
+
+else_stmt
+	::=	ELSE COLON suite:s
+	{:
+		RESULT = new Control("Else",s,curr_line());
+	:}
+	|
+	;
+
+suite
+	::= NEWLINE	INDENT stmt_list:sl DEDENT
+	{:RESULT =sl;:}
+	| NEWLINE suite:s
+	{:
+		RESULT = s;
+	:}
+	;
+
+param_list_call
+	::=	elements:e COMMA param_list_call:p
+	{: 
+		Node<String> List = new Node<String>("Parameter List");
+		List.addChild(e);
+		if(p != null)
+		{
+		ArrayList<Node<String>> OldList = (ArrayList) p.getChilds();
+		for(int i =0;i<OldList.size();i++){
+
+			List.addChild(OldList.get(i));
+			}
+		}
+		RESULT = List;
+
+	:}
+	| elements:e
+	{: 
+		Node<String> tmp = new Node<String>("Parameter List");
+		tmp.addChild(e);
+		RESULT = tmp;
+	:}
+	|
+	;	
+
+function_call
+	::= IDENT:id LPAR param_list_call:plc RPAR
+	{:
+
+		Node<String> name = new Node<String>("Name");
+		name.addChild(new Identifier(id,curr_line()));
+
+		if(plc != null)
+		RESULT = new FunctionCall(name,plc,curr_line());
+		else
+		RESULT = new FunctionCall(name,curr_line());
+
+	:}
+	;
+
+
+
+
+expression 
+	::= expression:t1 EQEQ expression:t2
+	{:
+		RESULT = new BoolOp("==",t1,t2,curr_line());
+	:}
+	|	expression:t1 GT expression:t2
+	{:
+		RESULT = new BoolOp(">",t1,t2,curr_line());
+	:}
+	|	expression:t1 LT expression:t2
+	{:
+		RESULT = new BoolOp("<",t1,t2,curr_line());
+	:}
+	|	expression:t1 LET expression:t2
+	{:
+		RESULT = new BoolOp("<=",t1,t2,curr_line());
+	:}
+	|	expression:t1 GET expression:t2
+	{:
+		RESULT = new BoolOp(">=",t1,t2,curr_line());
+	:}
+	|	expression:t1 NEQ expression:t2
+	{:
+		RESULT = new BoolOp("!=",t1,t2,curr_line());
+	:}
+	|	expression:t1 NEQQ expression:t2
+	{:
+		RESULT = new BoolOp("<>",t1,t2,curr_line());
+	:}
+	|	expression:t1 AND expression:t2
+	{:
+		RESULT = new BoolOp("And",t1,t2,curr_line());
+	:}
+	|	expression:t1 OR expression:t2
+	{:
+		RESULT = new BoolOp("Or",t1,t2,curr_line());
+	:}
+	|	expression:t1 B_AND expression:t2
+	{:
+		RESULT = new BoolOp("&",t1,t2,curr_line());
+	:}
+	|	expression:e1 B_OR expression:e2
+	{:
+		RESULT = new BoolOp("|",e1,e2,curr_line());
+	:}
+	|	expression:e1 B_XOR expression:e2
+	{:
+		RESULT = new BoolOp("^",e1,e2,curr_line());
+	:}
+	|	expression:e1 IN expression:e2
+	{:
+		RESULT = new BoolOp("In",e1,e2,curr_line());
+	:}
+	|	expression:e1 IS_NOT expression:e2
+	{:
+		RESULT = new BoolOp("Is Not",e1,e2,curr_line());
+	:}
+	|	expression:e1 NOT_IN expression:e2
+	{:
+		RESULT = new BoolOp("Not In",e1,e2,curr_line());
+	:}
+	|	NOT expression:e
+	{:
+		RESULT = new BoolOp("Not",e,curr_line());
+	:}
+	| expression:e1 PLUS expression:e2
+	{: RESULT = new ArithExp("+",e1,e2,curr_line());	:}
+	|	expression:e1 MULT expression:e2
+	{: RESULT = new ArithExp("*",e1,e2,curr_line());	:}
+	| expression:e1 MINUS expression:e2
+	{: RESULT = new ArithExp("-",e1,e2,curr_line());	:}
+	|	expression:e1 DIV expression:e2
+	{: RESULT = new ArithExp("/",e1,e2,curr_line());	:}
+	|	expression:e1 POW expression:e2
+	{: RESULT = new ArithExp("**",e1,e2,curr_line());	:}
+	|	expression:e1 MOD expression:e2
+	{: RESULT = new ArithExp("%",e1,e2,curr_line());	:}
+	|	expression:e1 F_DIV expression:e2
+	{: RESULT = new ArithExp("//",e1,e2,curr_line());	:}
+	|	elements:s
+	{:RESULT = s;:}
+	|  LSB RSB
+	{:
+		RESULT = new Lista("[]",curr_line());
+	:}
+	;
+
+item_call
+	::= item_call:et DOT item_call:ic2
+	{:
+
+	RESULT = new ItemCall(et,ic2,curr_line());
+
+	:}
+	| elements_two:et
+	{:
+		RESULT = et;
+	:}
+	;
