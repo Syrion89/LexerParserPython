@@ -1,4 +1,0 @@
-Il lexer è stato testato sul sistema operativo Os x El Capitain Versione 10.11.4.
-Per utilizzare il lexer è necessario usare il tool Jflex per generare il relativo file class del file python.jlex.
-Per compilare i file dare il seguente comando: javac -cp java-cup-11a.jar PythonLexer.java PythonLexerTest.java sym.java
-Per eseguire il lexer usare il seguente comando: python good/good_1.py 
