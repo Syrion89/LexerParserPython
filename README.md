@@ -15,7 +15,7 @@ On first usage:
  javac java_cup/runtime/*.java
 ```
 
-In order to modify somethings in the Lexer you will need to download Jflex and execute the follow command:
+In order to modify something in the Lexer you will need to download Jflex and execute the command:
   ```
  jflex python.jflex
   ```
