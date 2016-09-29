@@ -34,7 +34,7 @@ To modify the Parser and compile everything you will need to execute:
 Lexer:
 
 ```
-syrion:LexerParserPython r00t$ java PythonLexerTest input.py 
+syrion:LexerParserPython syrion$ java PythonLexerTest input.py 
 < IDENT ,a>  at line 0, column 0
 < EQ >  at line 0, column 2
 < STRING ,'Hello World'>  at line 0, column 16
@@ -46,7 +46,7 @@ syrion:LexerParserPython r00t$ java PythonLexerTest input.py
 Parser:
 
 ```
-syrion:LexerParserPython r00t$ java Parser input.py
+syrion:LexerParserPython syrion$ java Parser input.py
 Start:
 
 
